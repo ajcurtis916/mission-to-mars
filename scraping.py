@@ -19,7 +19,8 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "hemispheres": hemispheres(browser),
     }
     
     #stop webdriver and return data
@@ -77,14 +78,13 @@ def featured_image(browser):
     #add try/accept for error handling
     try:
         #find the relative image url
-        img_url_rel=img_soup.find('img',class_='fancybox-image').get('src')
+        img_url_rel=img_soup.find('img',class_="fancybox-image").get('src')
 
     except AttributeError:
         return None    
 
     #use base url to create an absolute url
     img_url=f'https://spaceimages-mars.com/{img_url_rel}'
-
     return img_url
 
 def mars_facts():
@@ -102,7 +102,33 @@ def mars_facts():
     df.set_index('description',inplace=True)
 
     #return df to html code, add bootstrap
-    return df.to_html(classes="table table-striped")
+    return df.to_html(classes="table table-responsive")
+
+def hemispheres(browser):
+    #Use browser to visit the URL 
+    url = 'https://marshemispheres.com/'
+
+    browser.visit(url)
+    
+    hemisphere_image_urls = []
+
+    for i in range(4):
+        hemisphere = {}
+        # We have to find the elements on each loop to avoid a stale element exception
+        browser.find_by_tag("a.product-item h3")[i].click()
+        # Next, we find the Sample image anchor tag and extract the href
+        # sample_elem = browser.find_link_by_text('Sample').first
+        sample_elem = browser.links.find_by_text('Sample').first
+        hemisphere['img_url'] = sample_elem['href']
+        # Get Hemisphere title
+        hemisphere['title'] = browser.find_by_css("h2.title").text
+        # Append hemisphere object to list
+        hemisphere_image_urls.append(hemisphere)
+        # Finally, we navigate backwards
+        browser.back()
+
+    return hemisphere_image_urls
+
 
 if __name__=="__main__":
     #if running as script, print scraped data
